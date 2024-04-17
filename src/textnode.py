@@ -111,18 +111,47 @@ def text_to_textnodes(text):
     return new_nodes
 
 def markdown_to_blocks(text):
-    return text.split("\n\n")
+    blocks = text.split("\n\n")
+    for b in blocks:
+        b = b.strip()
+        if b == "":
+            blocks.remove("")
+    return blocks
+    
 
-def block_to_blocktype(text):
-    if text[0] == "#":
+def block_to_blocktype(block):
+    lines = block.split("\n")
+    if (block.startwith("# ") or
+        block.startwith("## ") or
+        block.startwith("### ") or
+        block.startwith("#### ") or
+        block.startwith("##### ") or
+        block.startwith("###### ")):
         return blocktype_head
-    if text[0, 3] == "```":
+    if block[:3] == "```" and block[-3:] == "```":
         return blocktype_code
-    if text[0] == ">":
+    if block[0] == ">":
+        for l in lines:
+            if l[0] != ">":
+                return blocktype_par
         return blocktype_quote
-    if text[0] == "-" or text[0] == "*":
+    if block[:2] == "- ":
+        for l in lines:
+            if l[:2] != "- ":
+                return blocktype_par
         return blocktype_ulist
-    if text[0,2] == "1.":
+    if block[:2] == "* ":
+        for l in lines:
+            if l[:2] != "* ":
+                return blocktype_par
+        return blocktype_ulist
+        return blocktype_ulist
+    if block[:3] == "1. ":
+        i = 1
+        for l in lines:
+            if l[:3] != f"{i}. ":
+                return blocktype_par
+            i += 1
         return blocktype_olist
     return blocktype_par
 
@@ -155,7 +184,7 @@ def par_to_html_node(text):
     return ParentNode("p", nodes)
 
 def head_to_html_node(text):
-    pass
+    nodes = text_to_textnodes(t)
 
 def code_to_html(text):
     pass
