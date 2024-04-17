@@ -128,7 +128,7 @@ def block_to_blocktype(block):
         block.startwith("##### ") or
         block.startwith("###### ")):
         return blocktype_head
-    if block[:3] == "```" and block[-3:] == "```":
+    if block[:3] == "```" and block[-3:] == "```" and len(lines) > 1:
         return blocktype_code
     if block[0] == ">":
         for l in lines:
@@ -184,16 +184,46 @@ def par_to_html_node(text):
     return ParentNode("p", nodes)
 
 def head_to_html_node(text):
-    nodes = text_to_textnodes(t)
+    i = 0
+    while text.pop(0) == "#":
+        i += 1
+    nodes = text_to_textnodes(text)
+    for n in nodes:
+        n = n.text_node_to_html_node()
+    return ParentNode(f"h{i}", nodes)
 
 def code_to_html(text):
-    pass
+    text = text[3:-3]
+    nodes = text_to_textnodes(text)
+    for n in nodes:
+        n = n.text_node_to_html_node()
+    return ParentNode("pre", [ParentNode("code", nodes)])
 
 def quote_to_html(text):
-    pass
+    nodes = text_to_textnodes(text)
+    for n in nodes:
+        n = n[1:]
+        n = n.text_node_to_html_node()
+    return ParentNode(f"blockquote", nodes)
 
 def ulist_to_html(text):
-    pass
+    lines = text.split("\n")
+    html = []
+    for l in lines:
+        l = l[3:]
+        nodes = text_to_textnodes(l)
+        for n in nodes:
+            n = n.text_node_to_html_node()
+        html.append(ParentNode("li", nodes))
+    return ParentNode("ul", html)
 
 def olist_to_html(text):
-    pass
+    lines = text.split("\n")
+    html = []
+    for l in lines:
+        l = l[3:]
+        nodes = text_to_textnodes(l)
+        for n in nodes:
+            n = n.text_node_to_html_node()
+        html.append(ParentNode("li", nodes))
+    return ParentNode("ol", html)
