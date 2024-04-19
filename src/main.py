@@ -1,12 +1,30 @@
-from htmlnode import LeafNode, HTMLNode
-from textnode import TextNode
+import os
+import re
+import shutil
 
 
-test = TextNode('This is a text node', 'bold', 'https://www.boot.dev')
-Leaf1 = LeafNode("Hello World")
-Leaf2 = LeafNode("This is bold", "b")
-Leaf3 = LeafNode("Link!", "a", {"href": "example.com"})
-print(test)
-print(Leaf1.to_html())
-print(Leaf2.to_html())
-print(Leaf3.to_html())
+def copy_dir(source, destination):
+    if not os.path.exists(source):
+        raise ValueError("Source is not valid path")
+    if not os.path.exists(destination):
+        raise ValueError("Destination is not valid path")
+    files = os.listdir(source)
+    for f in files:
+        origin = os.path.join(source, f)
+        dest = os.path.join(destination, f)
+        if os.path.isfile(origin):
+            shutil.copy(origin, dest)
+        if os.path.isdir(origin):
+            os.mkdir(dest)
+            copy_dir(origin, dest)
+
+def copy_static():
+    shutil.rmtree("public", True)
+    os.mkdir("public")
+    copy_dir("static", "public")
+
+def extract_title(text):
+    match = re.search("/# (.)/g")
+    if match is None:
+        raise ValueError("Markdown does not contain ")
+
