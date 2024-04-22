@@ -37,18 +37,17 @@ def generate_page(from_path, template_path, to_path):
     template_file = open(template_path)
     template = template_file.read()
     template_file.close()
-    html =  markdown_to_html_node(file).toHTML()
+    html =  markdown_to_html_node(file).to_html()
     title = extract_title(file)
-    template.replace("{{ Title }}", title)
-    template.replace("{{ Content }}", html)
+    page = template.replace("{{ Title }}", title).replace("{{ Content }}", html)
     to_dir = os.path.dirname(from_path)
     os.makedirs(to_dir, exist_ok= True)
     newfile = open(to_path, "w")
-    newfile.write(template)
+    newfile.write(page)
     newfile.close()
 
 def main():
     copy_static()
-    generate_page("/content/index.md", "template.html", "public/index.html")
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 main()

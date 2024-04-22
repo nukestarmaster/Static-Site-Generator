@@ -1,5 +1,5 @@
 import re
-from htmlnode import LeafNode, ParentNode
+from .htmlnode import LeafNode, ParentNode
 
 texttype_text = "text"
 texttype_bold = "bold"
@@ -25,14 +25,14 @@ class TextNode:
         return self.text == other.text and self.text_type == other.text_type and self.url == other.url
     
     def __repr__(self):
-        return f"Textnote({self.text}, {self.text_type}, {self.url})"
+        return f"Textnode({self.text}, {self.text_type}, {self.url})"
     
     def text_node_to_html_node(self):
-        switch = {"text": ("self.text", None, None),
-                  "bold": ("self.text", "b", None),
-                  "italic": ("self.text", "i", None),
-                  "code": ("self.text", "code", None),
-                  "link": ("self.text", "a", {"href": self.url}),
+        switch = {"text": (self.text, None, None),
+                  "bold": (self.text, "b", None),
+                  "italic": (self.text, "i", None),
+                  "code": (self.text, "code", None),
+                  "link": (self.text, "a", {"href": self.url}),
                   "image": ("", "img", {"src": self.url,
                                        "alt": self.text})}
         if self.text_type not in switch:
@@ -41,7 +41,7 @@ class TextNode:
                         switch[self.text_type][1],
                         switch[self.text_type][2])
     
-def split_nodes_delimiter(old_nodes, delimiter, text_type):
+def split_nodes_delimiter(old_nodes: TextNode, delimiter: str, text_type: str):
     new_nodes = []
     for n in old_nodes:
         split_text = n.text.split(delimiter)
@@ -57,7 +57,7 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 def split_nodes_image(old_nodes):
     new_nodes = []
     for n in old_nodes:
-        split_text = re.split("!\[(.*?)\]\((.*?)\)", n.text)
+        split_text = re.split(r"!\[(.*?)\]\((.*?)\)", n.text)
         list_images = extract_markdown_images(n.text)
         new_list = []
         for i in range(len(split_text)):
@@ -71,7 +71,7 @@ def split_nodes_image(old_nodes):
 def split_nodes_image(old_nodes):
     new_nodes = []
     for n in old_nodes:
-        split_text = re.split("!\[.*?\]\(.*?\)", n.text)
+        split_text = re.split(r"!\[.*?\]\(.*?\)", n.text)
         list_images = extract_markdown_images(n.text)
         new_list = []
         for i in range(len(split_text) - 1):
@@ -83,7 +83,7 @@ def split_nodes_image(old_nodes):
 def split_nodes_link(old_nodes):
     new_nodes = []
     for n in old_nodes:
-        split_text = re.split("\[.*?\]\(.*?\)", n.text)
+        split_text = re.split(r"\[.*?\]\(.*?\)", n.text)
         list_links = extract_markdown_links(n.text)
         new_list = []
         for i in range(len(split_text) - 1):
@@ -121,12 +121,12 @@ def markdown_to_blocks(text):
 
 def block_to_blocktype(block):
     lines = block.split("\n")
-    if (block.startwith("# ") or
-        block.startwith("## ") or
-        block.startwith("### ") or
-        block.startwith("#### ") or
-        block.startwith("##### ") or
-        block.startwith("###### ")):
+    if (block.startswith("# ") or
+        block.startswith("## ") or
+        block.startswith("### ") or
+        block.startswith("#### ") or
+        block.startswith("##### ") or
+        block.startswith("###### ")):
         return blocktype_head
     if block[:3] == "```" and block[-3:] == "```" and len(lines) > 1:
         return blocktype_code
@@ -179,32 +179,38 @@ def block_to_html_node(text, type):
 
 def par_to_html_node(text):
     nodes = text_to_textnodes(text)
+    htmlnodes = []
     for n in nodes:
-        n = n.text_node_to_html_node
-    return ParentNode("p", nodes)
+        htmlnodes.append(n.text_node_to_html_node())
+    return ParentNode("p", htmlnodes)
 
 def head_to_html_node(text):
     i = 0
-    while text.pop(0) == "#":
+    while text[0] == "#":
+        text = text[1:]
         i += 1
+    text = text[1:]
     nodes = text_to_textnodes(text)
+    htmlnodes = []
     for n in nodes:
-        n = n.text_node_to_html_node()
-    return ParentNode(f"h{i}", nodes)
+        htmlnodes.append(n.text_node_to_html_node())
+    return ParentNode(f"h{i}", htmlnodes)
 
 def code_to_html(text):
     text = text[3:-3]
     nodes = text_to_textnodes(text)
+    htmlnodes = []
     for n in nodes:
-        n = n.text_node_to_html_node()
-    return ParentNode("pre", [ParentNode("code", nodes)])
+        htmlnodes.append(n.text_node_to_html_node())
+    return ParentNode("pre", [ParentNode("code", htmlnodes)])
 
 def quote_to_html(text):
     nodes = text_to_textnodes(text)
+    htmlnodes = []
     for n in nodes:
-        n = n[1:]
-        n = n.text_node_to_html_node()
-    return ParentNode(f"blockquote", nodes)
+        n.text = n.text[1:]
+        htmlnodes.append(n.text_node_to_html_node())
+    return ParentNode(f"blockquote", htmlnodes)
 
 def ulist_to_html(text):
     lines = text.split("\n")
@@ -212,9 +218,10 @@ def ulist_to_html(text):
     for l in lines:
         l = l[3:]
         nodes = text_to_textnodes(l)
+        htmlnodes = []
         for n in nodes:
-            n = n.text_node_to_html_node()
-        html.append(ParentNode("li", nodes))
+            htmlnodes.append(n.text_node_to_html_node())
+        html.append(ParentNode("li", htmlnodes))
     return ParentNode("ul", html)
 
 def olist_to_html(text):
@@ -223,7 +230,8 @@ def olist_to_html(text):
     for l in lines:
         l = l[3:]
         nodes = text_to_textnodes(l)
+        htmlnodes = []
         for n in nodes:
-            n = n.text_node_to_html_node()
-        html.append(ParentNode("li", nodes))
+            htmlnodes.append(n.text_node_to_html_node())
+        html.append(ParentNode("li", htmlnodes))
     return ParentNode("ol", html)
